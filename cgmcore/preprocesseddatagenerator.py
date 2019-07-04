@@ -7,6 +7,7 @@ Note: It currently works on pointcloud-data only!
 
 from __future__ import absolute_import
 import os
+import sys
 import numpy as np
 import glob2 as glob
 import random
@@ -126,8 +127,15 @@ class PreprocessedDataGenerator(object):
         Each individual is represented via a unique QR-code. This method extracts the set of QR-codes.
         """
 
+        # check if folder exists
+        if not os.path.exists(self.dataset_path):
+            print ('Folder ' + self.dataset_path + ' does not exist')
+            print ('Going to exit script')
+            sys.exit(0)
+        
         # Retrieve the QR-codes from the folders.
         paths = glob.glob(os.path.join(self.dataset_path, "*"))
+        print (paths)
         paths = [path for path in paths if os.path.isdir(path) == True]
         self.qrcodes = sorted([path.split("/")[-1] for path in paths])
 
@@ -462,7 +470,7 @@ def get_input(class_self, pointcloud):
  
     # Get a random pointcloud.
     elif class_self.input_type == "pointcloud":
-        pointcloud = utils.subsample_pointcloud(pointcloud)
+        pointcloud = utils.subsample_pointcloud(pointcloud, 10000)
         x_input = pointcloud
   
     # Get a random pointcloud.

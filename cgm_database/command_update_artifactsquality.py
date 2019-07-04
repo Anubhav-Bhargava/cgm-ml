@@ -40,7 +40,7 @@ def main():
     print("Getting all artifacts...")
     sql_statement = ""
     # Select all artifacts.
-    sql_statement += "SELECT pointcloud_data.id, pointcloud_data.path, measurements.height_cms, pointcloud_data.qrcode FROM pointcloud_data"
+    sql_statement += "SELECT pointcloud_data.id, pointcloud_data.path, measurements.weight_kgs, pointcloud_data.qrcode FROM pointcloud_data"
     # Join them with measurements.
     sql_statement += " INNER JOIN measurements ON pointcloud_data.measurement_id=measurements.id"
     # Only take into account manual measurements.
@@ -59,6 +59,7 @@ def main():
         model = load_model(model_path)
         model_name = model_path.split("/")[-2]
         
+       t
         # Evaluate and create SQL-statements.
         bar = progressbar.ProgressBar(max_value=len(artifacts))
         for artifact_index, artifact in enumerate(artifacts):
@@ -67,10 +68,10 @@ def main():
             # Execute SQL statement.
             try:
                 # Load the artifact and evaluate.
-                artifact_id, pcd_path, target_height, qrcode = artifact
+                artifact_id, pcd_path, target_weight, qrcode = artifact
                 pcd_array = utils.load_pcd_as_ndarray(pcd_path)
                 pcd_array = utils.subsample_pointcloud(pcd_array, 10000)
-                mse, mae = model.evaluate(np.expand_dims(pcd_array, axis=0), np.array([target_height]), verbose=0)
+                mse, mae = model.evaluate(np.expand_dims(pcd_array, axis=0), np.array([target_weight]), verbose=0)
                 if qrcode in qrcodes_train:
                     misc = "training"
                 else:
@@ -80,7 +81,8 @@ def main():
                 sql_statement = ""
                 sql_statement += "INSERT INTO artifact_quality (type, key, value, artifact_id, misc)"
                 sql_statement += " VALUES(\'{}\', \'{}\', \'{}\', \'{}\', \'{}\');".format(model_name, "mae", mae, artifact_id, misc)
-
+       
+                 
                 # Call database.
                 result = db_connector.execute(sql_statement)
             except psycopg2.IntegrityError:
@@ -95,7 +97,6 @@ def main():
         
         
 def load_model(model_path):
-
     input_shape = (10000, 3)
     output_size = 1
     model = modelutils.create_point_net(input_shape, output_size, hidden_sizes = [512, 256, 128])
